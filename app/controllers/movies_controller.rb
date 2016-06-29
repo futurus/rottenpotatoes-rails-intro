@@ -21,11 +21,10 @@ class MoviesController < ApplicationController
     end
     
     if !params.has_key?(:ratings) || !params.has_key?("ratings")
-      params[:ratings] = @all_ratings
+      params[:ratings] = Hash[@all_ratings.map {|key| [key, "1"]}]
     end
     
-    @movies = Movie.order(params[:by]).where(rating: @all_ratings)
-    flash[:notice] = params.to_s
+    @movies = Movie.order(params[:by]).where(rating: params[:ratings].keys)
   end
 
   def new
