@@ -13,16 +13,18 @@ class MoviesController < ApplicationController
   def index
     @all_ratings = Movie.get_ratings()
 
-    if !params.has_key?(:by)
-      params[:by] = session[:by]
+    flash[:notice] = params.to_s
+
+    if !params.has_key?(:format)
+      params[:format] = session[:format]
     else
-      @title_header, @release_date_header = case params[:by]
+      @title_header, @release_date_header = case params[:format]
       when "release_date"
         ["", "hilite"]
       else
         ["hilite", ""]
       end
-      session[:by] = params[:by]
+      session[:format] = params[:format]
     end
     
     if !params.has_key?(:ratings) || !params.has_key?("ratings")
@@ -31,7 +33,7 @@ class MoviesController < ApplicationController
       session[:ratings] = params[:ratings]
     end
     
-    @movies = Movie.order(params[:by]).where(rating: params[:ratings].keys)
+    @movies = Movie.order(params[:format]).where(rating: params[:ratings].keys)
   end
 
   def new
