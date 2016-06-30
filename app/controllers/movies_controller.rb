@@ -12,16 +12,23 @@ class MoviesController < ApplicationController
 
   def index
     @all_ratings = Movie.get_ratings()
-    
-    @title_header, @release_date_header = case params[:by]
-    when "release_date"
-      ["", "hilite"]
+
+    if !params.has_key?(:by)
+      params[:by] = session[:by]
     else
-      ["hilite", ""]
+      @title_header, @release_date_header = case params[:by]
+      when "release_date"
+        ["", "hilite"]
+      else
+        ["hilite", ""]
+      end
+      session[:by] = params[:by]
     end
     
     if !params.has_key?(:ratings) || !params.has_key?("ratings")
-      params[:ratings] = Hash[@all_ratings.map {|key| [key, "1"]}]
+      params[:ratings] = session.has_key?(:ratings) ? session[:ratings] : Hash[@all_ratings.map {|key| [key, "1"]}]
+    else
+      session[:ratings] = params[:ratings]
     end
     
     @movies = Movie.order(params[:by]).where(rating: params[:ratings].keys)
