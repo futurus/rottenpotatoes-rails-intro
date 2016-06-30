@@ -11,38 +11,39 @@ class MoviesController < ApplicationController
   end
 
   def index
+    # for use with index.html.haml
     @all_ratings = Movie.get_ratings()
-    need_redirect = false # forcing RESTful routes
-  
+    redir = false
+    
+    # forcing RESTful routes
     if params.has_key?(:by)
-      @by = params[:by]
-      @title_header, @release_date_header = case params[:by]
-      when "release_date"
-        ["", "hilite"]
-      else
-        ["hilite", ""]
-      end
       session[:by] = params[:by] # remember user choice
     else
-      @by = session[:by]
-      need_redirect = true
+      params[:by] = session.has_key?(:by) ? session[:by] : ""
+      redir = true
     end
-    
-    @ratings = Hash[@all_ratings.map {|key| [key, "1"]}]
     
     if params.has_key?(:ratings)
-      @ratings = params[:ratings]
       session[:ratings] = params[:ratings] # remember user choice
     else
-      @ratings = session[:ratings] unless !session.has_key?(:ratings)
-      need_redirect = true
+      params[:ratings] = session.has_key?(:ratings) ? session[:ratings] : Hash[@all_ratings.map {|key| [key, "1"]}]
+      redir = true
     end
     
-    if need_redirect
-      redirect_to :by => @by, :ratings => @ratings
+    if redir
+      redirect_to movies_path(:by => params[:by], :ratings => params[:ratings])
     end
     
-    @movies = Movie.order(@by).where(rating: @ratings.keys)
+    @title_header, @release_date_header = case params[:by]
+      when "release_date"
+        ["", "hilite"]
+      when "title"
+        ["hilite", ""]
+      else
+        ["", ""]
+    end
+    
+    @movies = Movie.order(params[:by]).where(rating: params[:ratings].keys)
   end
 
   def new
