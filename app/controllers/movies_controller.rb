@@ -12,28 +12,37 @@ class MoviesController < ApplicationController
 
   def index
     @all_ratings = Movie.get_ratings()
-
-    flash[:notice] = params.to_s
-
-    if !params.has_key?(:format)
-      params[:format] = session[:format]
-    else
-      @title_header, @release_date_header = case params[:format]
+    need_redirect = false # forcing RESTful routes
+  
+    if params.has_key?(:by)
+      @by = params[:by]
+      @title_header, @release_date_header = case params[:by]
       when "release_date"
         ["", "hilite"]
       else
         ["hilite", ""]
       end
-      session[:format] = params[:format]
-    end
-    
-    if !params.has_key?(:ratings) || !params.has_key?("ratings")
-      params[:ratings] = session.has_key?(:ratings) ? session[:ratings] : Hash[@all_ratings.map {|key| [key, "1"]}]
+      session[:by] = params[:by] # remember user choice
     else
-      session[:ratings] = params[:ratings]
+      @by = session[:by]
+      need_redirect = true
     end
     
-    @movies = Movie.order(params[:format]).where(rating: params[:ratings].keys)
+    @ratings = Hash[@all_ratings.map {|key| [key, "1"]}]
+    
+    if params.has_key?(:ratings)
+      @ratings = params[:ratings]
+      session[:ratings] = params[:ratings] # remember user choice
+    else
+      @ratings = session[:ratings] unless !session.has_key?(:ratings)
+      need_redirect = true
+    end
+    
+    if need_redirect
+      redirect_to :by => @by, :ratings => @ratings
+    end
+    
+    @movies = Movie.order(@by).where(rating: @ratings.keys)
   end
 
   def new
