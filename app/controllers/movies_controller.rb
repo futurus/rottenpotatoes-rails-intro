@@ -1,3 +1,5 @@
+require 'set'
+
 class MoviesController < ApplicationController
 
   def movie_params
@@ -11,39 +13,58 @@ class MoviesController < ApplicationController
   end
 
   def index
-    # for use with index.html.haml
-    @all_ratings = Movie.get_ratings()
-    redir = false
+    # fresh page: no params, no session
+    # --> display Movie.all
+    # if (params is set)
+    # --> use params to display
+    # ----> set session = params
+    # otherwise (no params), check session
+    # --> if session is set, use session to display
     
-    # forcing RESTful routes
-    if params.has_key?(:by)
-      session[:by] = params[:by] # remember user choice
-    else
-      params[:by] = session.has_key?(:by) ? session[:by] : ""
-      redir = true
+    need_redirection = false
+    # pull all possible ratings from class method in Movie model
+    @all_ratings = Movie.all_ratings_method
+
+    # sort movies
+    @by = params[:by] || session[:by] || ""
+    # safeguarding malicious GET request
+    @by, @class_title, @class_rd = case @by
+      when "title" then ["title", "hilite", ""]
+      when "release_date" then ["release_date", "", "hilite"]
+      else ["", "", ""]
     end
     
-    if params.has_key?(:ratings)
+    # initialize @rating so that all checkboxes are checked on fresh index
+    @ratings = params[:ratings] || session[:ratings] || {}
+    if @ratings == {}
+      @ratings = @all_ratings.each { |rating| @ratings[rating] = "1"}
+    end
+    
+    # on fresh page, display everything, unsorted
+    @movies = Movie.all
+    
+    # @ratings = {'G' => '1', ..., 'R' => '1'}
+    
+    # sort the table according to 'title' or 'release_date'
+    if params[:by] # use params[:by] to order
+      session[:by] = params[:by]
+    else
+      need_redirection = true
+    end
+    
+    # display only movies whose ratings = @ratings (could be from params or session)
+    if params[:ratings]
       session[:ratings] = params[:ratings] # remember user choice
     else
-      params[:ratings] = session.has_key?(:ratings) ? session[:ratings] : Hash[@all_ratings.map {|key| [key, "1"]}]
-      redir = true
+      need_redirection = true
     end
     
-    if redir
-      redirect_to movies_path(:by => params[:by], :ratings => params[:ratings])
+    # redirect_to by: @by, ratings: @ratings
+    if need_redirection
+      redirect_to by: @by, ratings: @ratings 
     end
     
-    @title_header, @release_date_header = case params[:by]
-      when "release_date"
-        ["", "hilite"]
-      when "title"
-        ["hilite", ""]
-      else
-        ["", ""]
-    end
-    
-    @movies = Movie.order(params[:by]).where(rating: params[:ratings].keys)
+    @movies = Movie.where(rating: @ratings.keys).order(@by)
   end
 
   def new
