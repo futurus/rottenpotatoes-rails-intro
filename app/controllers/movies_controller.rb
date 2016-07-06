@@ -13,14 +13,6 @@ class MoviesController < ApplicationController
   end
 
   def index
-    # fresh page: no params, no session
-    # --> display Movie.all
-    # if (params is set)
-    # --> use params to display
-    # ----> set session = params
-    # otherwise (no params), check session
-    # --> if session is set, use session to display
-    
     need_redirection = false
     # pull all possible ratings from class method in Movie model
     @all_ratings = Movie.all_ratings_method
@@ -40,10 +32,8 @@ class MoviesController < ApplicationController
       @ratings = @all_ratings.each { |rating| @ratings[rating] = "1"}
     end
     
-    # on fresh page, display everything, unsorted
+    # on fresh page (and by default), display everything, unsorted
     @movies = Movie.all
-    
-    # @ratings = {'G' => '1', ..., 'R' => '1'}
     
     # sort the table according to 'title' or 'release_date'
     if params[:by] # use params[:by] to order
